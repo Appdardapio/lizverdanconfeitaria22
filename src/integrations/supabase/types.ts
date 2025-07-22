@@ -14,7 +14,122 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      itens_pedido: {
+        Row: {
+          created_at: string
+          id: string
+          pedido_id: string
+          produto_nome: string
+          quantidade: number
+          subtotal: number
+          valor_unitario: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          pedido_id: string
+          produto_nome: string
+          quantidade: number
+          subtotal: number
+          valor_unitario: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          pedido_id?: string
+          produto_nome?: string
+          quantidade?: number
+          subtotal?: number
+          valor_unitario?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "itens_pedido_pedido_id_fkey"
+            columns: ["pedido_id"]
+            isOneToOne: false
+            referencedRelation: "pedidos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pedidos: {
+        Row: {
+          created_at: string
+          data_pedido: string
+          endereco: string | null
+          forma_pagamento: string
+          id: string
+          modo_entrega: string
+          nome_cliente: string
+          status: string
+          total: number
+          updated_at: string
+          whatsapp: string
+        }
+        Insert: {
+          created_at?: string
+          data_pedido?: string
+          endereco?: string | null
+          forma_pagamento: string
+          id?: string
+          modo_entrega: string
+          nome_cliente: string
+          status?: string
+          total: number
+          updated_at?: string
+          whatsapp: string
+        }
+        Update: {
+          created_at?: string
+          data_pedido?: string
+          endereco?: string | null
+          forma_pagamento?: string
+          id?: string
+          modo_entrega?: string
+          nome_cliente?: string
+          status?: string
+          total?: number
+          updated_at?: string
+          whatsapp?: string
+        }
+        Relationships: []
+      }
+      produtos: {
+        Row: {
+          created_at: string
+          descricao: string | null
+          disponibilidade: boolean
+          estoque: number
+          foto: string | null
+          id: string
+          nome: string
+          updated_at: string
+          valor: number
+        }
+        Insert: {
+          created_at?: string
+          descricao?: string | null
+          disponibilidade?: boolean
+          estoque?: number
+          foto?: string | null
+          id?: string
+          nome: string
+          updated_at?: string
+          valor: number
+        }
+        Update: {
+          created_at?: string
+          descricao?: string | null
+          disponibilidade?: boolean
+          estoque?: number
+          foto?: string | null
+          id?: string
+          nome?: string
+          updated_at?: string
+          valor?: number
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

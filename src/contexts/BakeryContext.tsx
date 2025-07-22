@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 import brigadeiroImg from '@/assets/brigadeiro.jpg';
 import beijinhoImg from '@/assets/beijinho.jpg';
 import tortaMorangoImg from '@/assets/torta-morango.jpg';
@@ -66,57 +67,166 @@ export const BakeryProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [carrinho, setCarrinho] = useState<CartItem[]>([]);
   const [pedidos, setPedidos] = useState<Order[]>([]);
 
-  // Sample products for demonstration
+  // Load products from database
   useEffect(() => {
-    if (produtos.length === 0) {
-      const sampleProducts: Product[] = [
-        {
-          id: '1',
-          foto: brigadeiroImg,
-          nome: 'Brigadeiro Gourmet',
-          descricao: 'Delicioso brigadeiro artesanal com chocolate belga',
-          valor: 3.50,
-          estoque: 50,
-          disponibilidade: true,
-        },
-        {
-          id: '2',
-          foto: beijinhoImg,
-          nome: 'Beijinho Premium',
-          descricao: 'Beijinho tradicional com coco ralado fresco',
-          valor: 3.00,
-          estoque: 40,
-          disponibilidade: true,
-        },
-        {
-          id: '3',
-          foto: tortaMorangoImg,
-          nome: 'Torta de Morango',
-          descricao: 'Torta artesanal com morangos frescos e chantilly',
-          valor: 45.00,
-          estoque: 5,
-          disponibilidade: true,
-        },
-      ];
-      setProdutos(sampleProducts);
+    loadProducts();
+    loadOrders();
+  }, []);
+
+  const loadProducts = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('produtos')
+        .select('*')
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      
+      if (data && data.length > 0) {
+        setProdutos(data);
+      } else {
+        // Insert sample products if none exist
+        await insertSampleProducts();
+      }
+    } catch (error) {
+      console.error('Erro ao carregar produtos:', error);
+      // Fallback to sample data if there's an error
+      insertSampleProducts();
     }
-  }, [produtos.length]);
-
-  const addProduct = (product: Omit<Product, 'id'>) => {
-    const newProduct = { 
-      ...product, 
-      id: Date.now().toString(),
-      foto: product.foto || brigadeiroImg
-    };
-    setProdutos(prev => [...prev, newProduct]);
   };
 
-  const updateProduct = (id: string, updates: Partial<Product>) => {
-    setProdutos(prev => prev.map(p => p.id === id ? { ...p, ...updates } : p));
+  const insertSampleProducts = async () => {
+    const sampleProducts = [
+      {
+        foto: brigadeiroImg,
+        nome: 'Brigadeiro Gourmet',
+        descricao: 'Delicioso brigadeiro artesanal com chocolate belga',
+        valor: 3.50,
+        estoque: 50,
+        disponibilidade: true,
+      },
+      {
+        foto: beijinhoImg,
+        nome: 'Beijinho Premium',
+        descricao: 'Beijinho tradicional com coco ralado fresco',
+        valor: 3.00,
+        estoque: 40,
+        disponibilidade: true,
+      },
+      {
+        foto: tortaMorangoImg,
+        nome: 'Torta de Morango',
+        descricao: 'Torta artesanal com morangos frescos e chantilly',
+        valor: 45.00,
+        estoque: 5,
+        disponibilidade: true,
+      },
+    ];
+
+    try {
+      const { data, error } = await supabase
+        .from('produtos')
+        .insert(sampleProducts)
+        .select();
+      
+      if (error) throw error;
+      if (data) setProdutos(data);
+    } catch (error) {
+      console.error('Erro ao inserir produtos de exemplo:', error);
+    }
   };
 
-  const deleteProduct = (id: string) => {
-    setProdutos(prev => prev.filter(p => p.id !== id));
+  const loadOrders = async () => {
+    try {
+      const { data: pedidosData, error: pedidosError } = await supabase
+        .from('pedidos')
+        .select(`
+          *,
+          itens_pedido (
+            produto_nome,
+            quantidade,
+            valor_unitario,
+            subtotal
+          )
+        `)
+        .order('data_pedido', { ascending: false });
+      
+      if (pedidosError) throw pedidosError;
+      
+      if (pedidosData) {
+        const formattedOrders = pedidosData.map(pedido => ({
+          id: pedido.id,
+          nome_cliente: pedido.nome_cliente,
+          whatsapp: pedido.whatsapp,
+          endereco: pedido.endereco,
+          status: pedido.status,
+          data_pedido: pedido.data_pedido,
+          modo_entrega: pedido.modo_entrega,
+          forma_pagamento: pedido.forma_pagamento,
+          itens: pedido.itens_pedido.map(item => ({
+            nome: item.produto_nome,
+            valor: item.valor_unitario,
+            quantidade: item.quantidade,
+            subtotal: item.subtotal
+          }))
+        }));
+        setPedidos(formattedOrders);
+      }
+    } catch (error) {
+      console.error('Erro ao carregar pedidos:', error);
+    }
+  };
+
+  const addProduct = async (product: Omit<Product, 'id'>) => {
+    try {
+      const { data, error } = await supabase
+        .from('produtos')
+        .insert([{
+          foto: product.foto || brigadeiroImg,
+          nome: product.nome,
+          descricao: product.descricao,
+          valor: product.valor,
+          estoque: product.estoque,
+          disponibilidade: product.disponibilidade
+        }])
+        .select()
+        .single();
+      
+      if (error) throw error;
+      if (data) setProdutos(prev => [...prev, data]);
+    } catch (error) {
+      console.error('Erro ao adicionar produto:', error);
+    }
+  };
+
+  const updateProduct = async (id: string, updates: Partial<Product>) => {
+    try {
+      const { data, error } = await supabase
+        .from('produtos')
+        .update(updates)
+        .eq('id', id)
+        .select()
+        .single();
+      
+      if (error) throw error;
+      if (data) setProdutos(prev => prev.map(p => p.id === id ? data : p));
+    } catch (error) {
+      console.error('Erro ao atualizar produto:', error);
+    }
+  };
+
+  const deleteProduct = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('produtos')
+        .delete()
+        .eq('id', id);
+      
+      if (error) throw error;
+      setProdutos(prev => prev.filter(p => p.id !== id));
+    } catch (error) {
+      console.error('Erro ao excluir produto:', error);
+    }
   };
 
   const addToCart = (item: CartItem) => {
@@ -138,24 +248,78 @@ export const BakeryProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   const cartTotal = carrinho.reduce((total, item) => total + item.subtotal, 0);
 
-  const addOrder = (order: Omit<Order, 'id'>) => {
-    const newOrder = { ...order, id: Date.now().toString() };
-    setPedidos(prev => [...prev, newOrder]);
-    
-    // Update stock for ordered items
-    carrinho.forEach(item => {
-      const product = produtos.find(p => p.nome === item.nome);
-      if (product) {
-        updateProduct(product.id, {
-          estoque: Math.max(0, product.estoque - item.quantidade),
-          disponibilidade: (product.estoque - item.quantidade) > 0
-        });
+  const addOrder = async (order: Omit<Order, 'id'>) => {
+    try {
+      // Calculate total
+      const total = carrinho.reduce((sum, item) => sum + item.subtotal, 0);
+      
+      // Insert order
+      const { data: orderData, error: orderError } = await supabase
+        .from('pedidos')
+        .insert([{
+          nome_cliente: order.nome_cliente,
+          whatsapp: order.whatsapp,
+          endereco: order.endereco,
+          status: order.status,
+          modo_entrega: order.modo_entrega,
+          forma_pagamento: order.forma_pagamento,
+          total: total
+        }])
+        .select()
+        .single();
+      
+      if (orderError) throw orderError;
+      
+      // Insert order items
+      const items = carrinho.map(item => ({
+        pedido_id: orderData.id,
+        produto_nome: item.nome,
+        quantidade: item.quantidade,
+        valor_unitario: item.valor,
+        subtotal: item.subtotal
+      }));
+      
+      const { error: itemsError } = await supabase
+        .from('itens_pedido')
+        .insert(items);
+      
+      if (itemsError) throw itemsError;
+      
+      // Update local state
+      const newOrder = { 
+        ...order, 
+        id: orderData.id,
+        itens: carrinho 
+      };
+      setPedidos(prev => [...prev, newOrder]);
+      
+      // Update stock for ordered items
+      for (const item of carrinho) {
+        const product = produtos.find(p => p.nome === item.nome);
+        if (product) {
+          await updateProduct(product.id, {
+            estoque: Math.max(0, product.estoque - item.quantidade),
+            disponibilidade: (product.estoque - item.quantidade) > 0
+          });
+        }
       }
-    });
+    } catch (error) {
+      console.error('Erro ao criar pedido:', error);
+    }
   };
 
-  const updateOrderStatus = (id: string, status: string) => {
-    setPedidos(prev => prev.map(p => p.id === id ? { ...p, status } : p));
+  const updateOrderStatus = async (id: string, status: string) => {
+    try {
+      const { error } = await supabase
+        .from('pedidos')
+        .update({ status })
+        .eq('id', id);
+      
+      if (error) throw error;
+      setPedidos(prev => prev.map(p => p.id === id ? { ...p, status } : p));
+    } catch (error) {
+      console.error('Erro ao atualizar status:', error);
+    }
   };
 
   return (
