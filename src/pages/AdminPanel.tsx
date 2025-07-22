@@ -243,7 +243,13 @@ const AdminPanel = () => {
                             <Button 
                               size="sm" 
                               variant="destructive"
-                              onClick={() => deleteProduct(produto.id)}
+                              onClick={() => {
+                                deleteProduct(produto.id);
+                                toast({
+                                  title: "Produto excluído!",
+                                  description: `${produto.nome} foi removido com sucesso.`,
+                                });
+                              }}
                             >
                               <Trash2 className="w-4 h-4" />
                             </Button>

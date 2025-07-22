@@ -301,15 +301,19 @@ const DigitalMenu = () => {
                 </div>
 
                 {orderData.modo_entrega === 'Entrega' && (
-                  <div className="space-y-2">
+                  <div className="space-y-2 md:col-span-2">
                     <Label htmlFor="endereco">Endereço completo *</Label>
                     <Textarea
                       id="endereco"
                       value={orderData.endereco}
                       onChange={(e) => setOrderData({...orderData, endereco: e.target.value})}
-                      placeholder="Rua, número, bairro, cidade..."
+                      placeholder="Rua, número, bairro, cidade, CEP, ponto de referência..."
+                      className="min-h-[100px]"
                       required
                     />
+                    <p className="text-xs text-muted-foreground">
+                      Inclua todas as informações necessárias para a entrega
+                    </p>
                   </div>
                 )}
 
