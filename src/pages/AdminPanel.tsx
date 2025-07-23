@@ -165,7 +165,17 @@ const AdminPanel = () => {
     const order = pedidos.find(p => p.id === orderId);
     
     if (order) {
-      // Simulate WhatsApp notification
+      // Se o status for "Saiu para entrega", enviar mensagem no WhatsApp para o cliente
+      if (newStatus === "Saiu para entrega") {
+        const total = order.itens.reduce((sum, item) => sum + item.subtotal, 0);
+        const message = `Olá ${order.nome_cliente}! 🚚\n\nSeu pedido saiu para entrega e já está a caminho!\n\nItens do pedido:\n${order.itens.map(item => `• ${item.quantidade}x ${item.nome}`).join('\n')}\n\nTotal: R$ ${total.toFixed(2)}\n\nObrigado pela preferência! 😊`;
+        
+        const whatsappNumber = order.whatsapp.replace(/\D/g, '');
+        const whatsappUrl = `https://wa.me/55${whatsappNumber}?text=${encodeURIComponent(message)}`;
+        
+        window.open(whatsappUrl, '_blank');
+      }
+      
       toast({
         title: "Status atualizado!",
         description: `Pedido de ${order.nome_cliente} agora está: ${newStatus}`,
