@@ -66,20 +66,11 @@ const DigitalMenu = () => {
   const handleFinalizarPedido = (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!orderData.nome_cliente || !orderData.whatsapp || !orderData.modo_entrega || !orderData.forma_pagamento) {
+    if (!orderData.nome_cliente || !orderData.whatsapp || !orderData.modo_entrega || !orderData.forma_pagamento || !orderData.endereco) {
       toast({
         variant: "destructive",
         title: "Erro",
         description: "Preencha todos os campos obrigatórios!",
-      });
-      return;
-    }
-
-    if (orderData.modo_entrega === 'Entrega' && !orderData.endereco) {
-      toast({
-        variant: "destructive",
-        title: "Erro", 
-        description: "Endereço é obrigatório para entrega!",
       });
       return;
     }
@@ -95,6 +86,25 @@ const DigitalMenu = () => {
       forma_pagamento: orderData.forma_pagamento
     });
 
+    // Enviar mensagem pelo WhatsApp
+    const message = `🧁 *NOVO PEDIDO - Liz Verdan Confeitaria*
+
+👤 *Cliente:* ${orderData.nome_cliente}
+📱 *WhatsApp:* ${orderData.whatsapp}
+🏠 *Endereço:* ${orderData.endereco}
+🚚 *Entrega:* ${orderData.modo_entrega}
+💳 *Pagamento:* ${orderData.forma_pagamento}
+
+📦 *Itens do pedido:*
+${carrinho.map(item => `• ${item.quantidade}x ${item.nome} - R$ ${item.subtotal.toFixed(2)}`).join('\n')}
+
+💰 *Total: R$ ${cartTotal.toFixed(2)}*
+
+⏰ *Pedido feito em:* ${new Date().toLocaleString('pt-BR')}`;
+
+    const whatsappUrl = `https://wa.me/5522992651972?text=${encodeURIComponent(message)}`;
+    window.open(whatsappUrl, '_blank');
+
     clearCart();
     setShowCheckout(false);
     setOrderData({
@@ -107,7 +117,7 @@ const DigitalMenu = () => {
 
     toast({
       title: "Pedido enviado!",
-      description: `Obrigada ${orderData.nome_cliente}! Seu pedido foi recebido.`,
+      description: `Obrigada ${orderData.nome_cliente}! Seu pedido foi enviado pelo WhatsApp.`,
     });
   };
 
@@ -300,22 +310,20 @@ const DigitalMenu = () => {
                   </div>
                 </div>
 
-                {orderData.modo_entrega === 'Entrega' && (
-                  <div className="space-y-2 md:col-span-2">
-                    <Label htmlFor="endereco">Endereço completo *</Label>
-                    <Textarea
-                      id="endereco"
-                      value={orderData.endereco}
-                      onChange={(e) => setOrderData({...orderData, endereco: e.target.value})}
-                      placeholder="Rua, número, bairro, cidade, CEP, ponto de referência..."
-                      className="min-h-[100px]"
-                      required
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      Inclua todas as informações necessárias para a entrega
-                    </p>
-                  </div>
-                )}
+                <div className="space-y-2 md:col-span-2">
+                  <Label htmlFor="endereco">Endereço completo *</Label>
+                  <Textarea
+                    id="endereco"
+                    value={orderData.endereco}
+                    onChange={(e) => setOrderData({...orderData, endereco: e.target.value})}
+                    placeholder="Rua, número, bairro, cidade, CEP, ponto de referência..."
+                    className="min-h-[100px]"
+                    required
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Inclua todas as informações necessárias para a entrega
+                  </p>
+                </div>
 
                 <div className="flex gap-4">
                   <Button 

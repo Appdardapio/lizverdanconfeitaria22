@@ -43,6 +43,17 @@ const AdminPanel = () => {
     disponibilidade: true
   });
 
+  // Edit product state
+  const [editingProduct, setEditingProduct] = useState<string | null>(null);
+  const [editProduct, setEditProduct] = useState({
+    foto: '',
+    nome: '',
+    descricao: '',
+    valor: '',
+    estoque: '',
+    disponibilidade: true
+  });
+
   const handleLogout = () => {
     setLogado(false);
     toast({
@@ -85,6 +96,67 @@ const AdminPanel = () => {
     toast({
       title: "Produto adicionado!",
       description: `${newProduct.nome} foi cadastrado com sucesso.`,
+    });
+  };
+
+  const handleEditProduct = (product: any) => {
+    setEditingProduct(product.id);
+    setEditProduct({
+      foto: product.foto,
+      nome: product.nome,
+      descricao: product.descricao,
+      valor: product.valor.toString(),
+      estoque: product.estoque.toString(),
+      disponibilidade: product.disponibilidade
+    });
+  };
+
+  const handleUpdateProduct = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!editProduct.nome || !editProduct.valor || !editProduct.estoque || !editingProduct) {
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: "Preencha todos os campos obrigatórios!",
+      });
+      return;
+    }
+
+    updateProduct(editingProduct, {
+      foto: editProduct.foto,
+      nome: editProduct.nome,
+      descricao: editProduct.descricao,
+      valor: parseFloat(editProduct.valor),
+      estoque: parseInt(editProduct.estoque),
+      disponibilidade: editProduct.disponibilidade
+    });
+
+    setEditingProduct(null);
+    setEditProduct({
+      foto: '',
+      nome: '',
+      descricao: '',
+      valor: '',
+      estoque: '',
+      disponibilidade: true
+    });
+
+    toast({
+      title: "Produto atualizado!",
+      description: `${editProduct.nome} foi atualizado com sucesso.`,
+    });
+  };
+
+  const handleCancelEdit = () => {
+    setEditingProduct(null);
+    setEditProduct({
+      foto: '',
+      nome: '',
+      descricao: '',
+      valor: '',
+      estoque: '',
+      disponibilidade: true
     });
   };
 
@@ -227,50 +299,134 @@ const AdminPanel = () => {
               {produtos.map((produto) => (
                 <Card key={produto.id} className={`shadow-card ${!produto.disponibilidade ? 'bg-red-50 border-red-200' : 'bg-green-50 border-green-200'}`}>
                   <CardContent className="p-6">
-                    <div className="flex gap-4">
-                      <img 
-                        src={produto.foto} 
-                        alt={produto.nome}
-                        className="w-20 h-20 object-cover rounded-lg"
-                      />
-                      <div className="flex-1">
-                        <div className="flex justify-between items-start mb-2">
-                          <h3 className="font-semibold text-lg">{produto.nome}</h3>
-                          <div className="flex gap-2">
-                            <Button size="sm" variant="outline">
-                              <Edit className="w-4 h-4" />
-                            </Button>
-                            <Button 
-                              size="sm" 
-                              variant="destructive"
-                              onClick={() => {
-                                deleteProduct(produto.id);
-                                toast({
-                                  title: "Produto excluído!",
-                                  description: `${produto.nome} foi removido com sucesso.`,
-                                });
-                              }}
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
+                    {editingProduct === produto.id ? (
+                      // Edit form
+                      <form onSubmit={handleUpdateProduct} className="space-y-4">
+                        <div className="grid md:grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label htmlFor="edit-foto">Foto do Produto (URL)</Label>
+                            <Input
+                              id="edit-foto"
+                              type="url"
+                              value={editProduct.foto}
+                              onChange={(e) => setEditProduct({...editProduct, foto: e.target.value})}
+                              placeholder="https://exemplo.com/foto.jpg"
+                            />
+                          </div>
+
+                          <div className="space-y-2">
+                            <Label htmlFor="edit-nome">Nome *</Label>
+                            <Input
+                              id="edit-nome"
+                              type="text"
+                              value={editProduct.nome}
+                              onChange={(e) => setEditProduct({...editProduct, nome: e.target.value})}
+                              placeholder="Nome do produto"
+                              required
+                            />
+                          </div>
+
+                          <div className="space-y-2 md:col-span-2">
+                            <Label htmlFor="edit-descricao">Descrição</Label>
+                            <Textarea
+                              id="edit-descricao"
+                              value={editProduct.descricao}
+                              onChange={(e) => setEditProduct({...editProduct, descricao: e.target.value})}
+                              placeholder="Descrição do produto"
+                            />
+                          </div>
+
+                          <div className="space-y-2">
+                            <Label htmlFor="edit-valor">Valor (R$) *</Label>
+                            <Input
+                              id="edit-valor"
+                              type="number"
+                              step="0.01"
+                              value={editProduct.valor}
+                              onChange={(e) => setEditProduct({...editProduct, valor: e.target.value})}
+                              placeholder="0.00"
+                              required
+                            />
+                          </div>
+
+                          <div className="space-y-2">
+                            <Label htmlFor="edit-estoque">Estoque *</Label>
+                            <Input
+                              id="edit-estoque"
+                              type="number"
+                              value={editProduct.estoque}
+                              onChange={(e) => setEditProduct({...editProduct, estoque: e.target.value})}
+                              placeholder="0"
+                              required
+                            />
+                          </div>
+
+                          <div className="flex items-center space-x-2 md:col-span-2">
+                            <Switch
+                              id="edit-disponibilidade"
+                              checked={editProduct.disponibilidade}
+                              onCheckedChange={(checked) => setEditProduct({...editProduct, disponibilidade: checked})}
+                            />
+                            <Label htmlFor="edit-disponibilidade">Disponível para venda?</Label>
                           </div>
                         </div>
-                        <p className="text-muted-foreground mb-2">{produto.descricao}</p>
-                        <div className="flex gap-4 items-center">
-                          <span className="font-semibold">R$ {produto.valor.toFixed(2)}</span>
-                          <span>Estoque: {produto.estoque}</span>
-                          <Badge variant={produto.disponibilidade ? "default" : "destructive"}>
-                            {produto.disponibilidade ? "Disponível" : "Indisponível"}
-                          </Badge>
+
+                        <div className="flex gap-2">
+                          <Button type="submit" className="bg-gradient-primary hover:opacity-90">
+                            Salvar Alterações
+                          </Button>
+                          <Button type="button" variant="outline" onClick={handleCancelEdit}>
+                            Cancelar
+                          </Button>
+                        </div>
+                      </form>
+                    ) : (
+                      // Display view
+                      <div className="flex gap-4">
+                        <img 
+                          src={produto.foto} 
+                          alt={produto.nome}
+                          className="w-20 h-20 object-cover rounded-lg"
+                        />
+                        <div className="flex-1">
+                          <div className="flex justify-between items-start mb-2">
+                            <h3 className="font-semibold text-lg">{produto.nome}</h3>
+                            <div className="flex gap-2">
+                              <Button size="sm" variant="outline" onClick={() => handleEditProduct(produto)}>
+                                <Edit className="w-4 h-4" />
+                              </Button>
+                              <Button 
+                                size="sm" 
+                                variant="destructive"
+                                onClick={() => {
+                                  deleteProduct(produto.id);
+                                  toast({
+                                    title: "Produto excluído!",
+                                    description: `${produto.nome} foi removido com sucesso.`,
+                                  });
+                                }}
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          </div>
+                          <p className="text-muted-foreground mb-2">{produto.descricao}</p>
+                          <div className="flex gap-4 items-center">
+                            <span className="font-semibold">R$ {produto.valor.toFixed(2)}</span>
+                            <span>Estoque: {produto.estoque}</span>
+                            <Badge variant={produto.disponibilidade ? "default" : "destructive"}>
+                              {produto.disponibilidade ? "Disponível" : "Indisponível"}
+                            </Badge>
+                          </div>
+                        </div>
+                        <div className="flex items-center">
+                          <Switch
+                            checked={produto.disponibilidade}
+                            onCheckedChange={(checked) => updateProduct(produto.id, { disponibilidade: checked })}
+                          />
                         </div>
                       </div>
-                      <div className="flex items-center">
-                        <Switch
-                          checked={produto.disponibilidade}
-                          onCheckedChange={(checked) => updateProduct(produto.id, { disponibilidade: checked })}
-                        />
-                      </div>
-                    </div>
+                    )}
                   </CardContent>
                 </Card>
               ))}
