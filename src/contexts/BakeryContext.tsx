@@ -82,16 +82,10 @@ export const BakeryProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       
       if (error) throw error;
       
-      if (data && data.length > 0) {
-        setProdutos(data);
-      } else {
-        // Insert sample products if none exist
-        await insertSampleProducts();
-      }
+      setProdutos(data || []);
     } catch (error) {
       console.error('Erro ao carregar produtos:', error);
-      // Fallback to sample data if there's an error
-      insertSampleProducts();
+      setProdutos([]);
     }
   };
 
