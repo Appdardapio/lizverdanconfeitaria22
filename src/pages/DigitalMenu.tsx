@@ -6,14 +6,14 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useBakery } from '@/contexts/BakeryContext';
 import { useToast } from '@/hooks/use-toast';
-import { ShoppingCart, Settings, Minus, Plus } from 'lucide-react';
+import { ShoppingCart, Minus, Plus, Eye } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 const DigitalMenu = () => {
   const navigate = useNavigate();
-  const { toast } = useToast();
   const {
     produtos,
     carrinho,
@@ -25,6 +25,8 @@ const DigitalMenu = () => {
 
   const [quantities, setQuantities] = useState<Record<string, number>>({});
   const [showCheckout, setShowCheckout] = useState(false);
+  const [selectedImage, setSelectedImage] = useState<{url: string, name: string} | null>(null);
+  const { toast } = useToast();
   const [orderData, setOrderData] = useState({
     nome_cliente: '',
     whatsapp: '',
@@ -145,11 +147,16 @@ ${carrinho.map(item => `• ${item.quantidade}x ${item.nome} - R$ ${item.subtota
                 {availableProducts.map((produto) => (
                   <Card key={produto.id} className="shadow-card hover:shadow-soft transition-shadow">
                     <CardContent className="p-0">
-                      <img 
-                        src={produto.foto} 
-                        alt={produto.nome}
-                        className="w-full h-48 object-cover rounded-t-lg"
-                      />
+                      <div className="relative group cursor-pointer" onClick={() => setSelectedImage({url: produto.foto, name: produto.nome})}>
+                        <img 
+                          src={produto.foto} 
+                          alt={produto.nome}
+                          className="w-full h-48 object-cover rounded-t-lg group-hover:opacity-80 transition-opacity"
+                        />
+                        <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all duration-200 rounded-t-lg flex items-center justify-center">
+                          <Eye className="w-6 h-6 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                        </div>
+                      </div>
                       <div className="p-4">
                         <h3 className="font-semibold text-lg mb-2">{produto.nome}</h3>
                         <p className="text-muted-foreground text-sm mb-3">{produto.descricao}</p>
@@ -345,6 +352,22 @@ ${carrinho.map(item => `• ${item.quantidade}x ${item.nome} - R$ ${item.subtota
             </CardContent>
           </Card>
         )}
+
+        {/* Modal para visualizar imagem em tamanho completo */}
+        <Dialog open={!!selectedImage} onOpenChange={() => setSelectedImage(null)}>
+          <DialogContent className="max-w-4xl max-h-[90vh] p-4">
+            <DialogHeader>
+              <DialogTitle>{selectedImage?.name}</DialogTitle>
+            </DialogHeader>
+            <div className="flex justify-center items-center">
+              <img 
+                src={selectedImage?.url} 
+                alt={selectedImage?.name}
+                className="max-w-full max-h-[70vh] object-contain rounded-lg"
+              />
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
 
       {/* Fixed Admin Button */}
