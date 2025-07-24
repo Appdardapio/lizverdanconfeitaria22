@@ -102,7 +102,7 @@ ${carrinho.map(item => `• ${item.quantidade}x ${item.nome} - R$ ${item.subtota
 
 ⏰ *Pedido feito em:* ${new Date().toLocaleString('pt-BR')}`;
 
-    const whatsappUrl = `https://wa.me/5522992651972?text=${encodeURIComponent(message)}`;
+    const whatsappUrl = `https://wa.me/5522998602746?text=${encodeURIComponent(message)}`;
     window.open(whatsappUrl, '_blank');
 
     clearCart();
