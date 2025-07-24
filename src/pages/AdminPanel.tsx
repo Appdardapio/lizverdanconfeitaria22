@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -42,6 +43,9 @@ const AdminPanel = () => {
     estoque: '',
     disponibilidade: true
   });
+  
+  const [newProductFile, setNewProductFile] = useState<File | null>(null);
+  const [uploadingNew, setUploadingNew] = useState(false);
 
   // Edit product state
   const [editingProduct, setEditingProduct] = useState<string | null>(null);
@@ -53,6 +57,9 @@ const AdminPanel = () => {
     estoque: '',
     disponibilidade: true
   });
+  
+  const [editProductFile, setEditProductFile] = useState<File | null>(null);
+  const [uploadingEdit, setUploadingEdit] = useState(false);
 
   const handleLogout = () => {
     setLogado(false);
@@ -63,7 +70,28 @@ const AdminPanel = () => {
     navigate('/admin');
   };
 
-  const handleAddProduct = (e: React.FormEvent) => {
+  // Upload image function
+  const uploadImage = async (file: File, fileName: string) => {
+    const { data, error } = await supabase.storage
+      .from('produtos-imagens')
+      .upload(fileName, file, {
+        upsert: true,
+        contentType: file.type
+      });
+    
+    if (error) {
+      console.error('Erro ao fazer upload da imagem:', error);
+      return null;
+    }
+    
+    const { data: { publicUrl } } = supabase.storage
+      .from('produtos-imagens')
+      .getPublicUrl(fileName);
+    
+    return publicUrl;
+  };
+
+  const handleAddProduct = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!newProduct.nome || !newProduct.valor || !newProduct.estoque) {
@@ -75,28 +103,59 @@ const AdminPanel = () => {
       return;
     }
 
-    addProduct({
-      foto: newProduct.foto || '/api/placeholder/300/200',
-      nome: newProduct.nome,
-      descricao: newProduct.descricao,
-      valor: parseFloat(newProduct.valor),
-      estoque: parseInt(newProduct.estoque),
-      disponibilidade: newProduct.disponibilidade
-    });
+    setUploadingNew(true);
+    
+    try {
+      let imageUrl = '';
+      
+      if (newProductFile) {
+        const fileName = `${Date.now()}_${newProductFile.name}`;
+        imageUrl = await uploadImage(newProductFile, fileName);
+        
+        if (!imageUrl) {
+          toast({
+            title: "Erro",
+            description: "Falha ao fazer upload da imagem",
+            variant: "destructive"
+          });
+          setUploadingNew(false);
+          return;
+        }
+      }
 
-    setNewProduct({
-      foto: '',
-      nome: '',
-      descricao: '',
-      valor: '',
-      estoque: '',
-      disponibilidade: true
-    });
+      addProduct({
+        foto: imageUrl || '/api/placeholder/300/200',
+        nome: newProduct.nome,
+        descricao: newProduct.descricao,
+        valor: parseFloat(newProduct.valor),
+        estoque: parseInt(newProduct.estoque),
+        disponibilidade: newProduct.disponibilidade
+      });
 
-    toast({
-      title: "Produto adicionado!",
-      description: `${newProduct.nome} foi cadastrado com sucesso.`,
-    });
+      setNewProduct({
+        foto: '',
+        nome: '',
+        descricao: '',
+        valor: '',
+        estoque: '',
+        disponibilidade: true
+      });
+      setNewProductFile(null);
+
+      toast({
+        title: "Produto adicionado!",
+        description: `${newProduct.nome} foi cadastrado com sucesso.`,
+      });
+    } catch (error) {
+      console.error('Erro ao adicionar produto:', error);
+      toast({
+        title: "Erro",
+        description: "Falha ao adicionar produto",
+        variant: "destructive"
+      });
+    } finally {
+      setUploadingNew(false);
+    }
   };
 
   const handleEditProduct = (product: any) => {
@@ -109,9 +168,10 @@ const AdminPanel = () => {
       estoque: product.estoque.toString(),
       disponibilidade: product.disponibilidade
     });
+    setEditProductFile(null);
   };
 
-  const handleUpdateProduct = (e: React.FormEvent) => {
+  const handleUpdateProduct = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!editProduct.nome || !editProduct.valor || !editProduct.estoque || !editingProduct) {
@@ -123,29 +183,62 @@ const AdminPanel = () => {
       return;
     }
 
-    updateProduct(editingProduct, {
-      foto: editProduct.foto,
-      nome: editProduct.nome,
-      descricao: editProduct.descricao,
-      valor: parseFloat(editProduct.valor),
-      estoque: parseInt(editProduct.estoque),
-      disponibilidade: editProduct.disponibilidade
-    });
+    setUploadingEdit(true);
+    
+    try {
+      let imageUrl = editProduct.foto;
+      
+      if (editProductFile) {
+        const fileName = `${Date.now()}_${editProductFile.name}`;
+        const uploadedUrl = await uploadImage(editProductFile, fileName);
+        
+        if (!uploadedUrl) {
+          toast({
+            title: "Erro",
+            description: "Falha ao fazer upload da imagem",
+            variant: "destructive"
+          });
+          setUploadingEdit(false);
+          return;
+        }
+        
+        imageUrl = uploadedUrl;
+      }
 
-    setEditingProduct(null);
-    setEditProduct({
-      foto: '',
-      nome: '',
-      descricao: '',
-      valor: '',
-      estoque: '',
-      disponibilidade: true
-    });
+      updateProduct(editingProduct, {
+        foto: imageUrl,
+        nome: editProduct.nome,
+        descricao: editProduct.descricao,
+        valor: parseFloat(editProduct.valor),
+        estoque: parseInt(editProduct.estoque),
+        disponibilidade: editProduct.disponibilidade
+      });
 
-    toast({
-      title: "Produto atualizado!",
-      description: `${editProduct.nome} foi atualizado com sucesso.`,
-    });
+      setEditingProduct(null);
+      setEditProduct({
+        foto: '',
+        nome: '',
+        descricao: '',
+        valor: '',
+        estoque: '',
+        disponibilidade: true
+      });
+      setEditProductFile(null);
+
+      toast({
+        title: "Produto atualizado!",
+        description: `${editProduct.nome} foi atualizado com sucesso.`,
+      });
+    } catch (error) {
+      console.error('Erro ao atualizar produto:', error);
+      toast({
+        title: "Erro",
+        description: "Falha ao atualizar produto",
+        variant: "destructive"
+      });
+    } finally {
+      setUploadingEdit(false);
+    }
   };
 
   const handleCancelEdit = () => {
@@ -158,6 +251,7 @@ const AdminPanel = () => {
       estoque: '',
       disponibilidade: true
     });
+    setEditProductFile(null);
   };
 
   const handleStatusChange = (orderId: string, newStatus: string) => {
@@ -229,13 +323,12 @@ const AdminPanel = () => {
                 <form onSubmit={handleAddProduct} className="space-y-4">
                   <div className="grid md:grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label htmlFor="foto">Foto do Produto (URL)</Label>
+                      <Label htmlFor="foto">Foto do Produto</Label>
                       <Input
                         id="foto"
-                        type="url"
-                        value={newProduct.foto}
-                        onChange={(e) => setNewProduct({...newProduct, foto: e.target.value})}
-                        placeholder="https://exemplo.com/foto.jpg"
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => setNewProductFile(e.target.files?.[0] || null)}
                       />
                     </div>
 
@@ -296,8 +389,8 @@ const AdminPanel = () => {
                     </div>
                   </div>
 
-                  <Button type="submit" className="w-full bg-gradient-primary hover:opacity-90">
-                    Salvar Produto
+                  <Button type="submit" disabled={uploadingNew} className="w-full bg-gradient-primary hover:opacity-90">
+                    {uploadingNew ? 'Salvando...' : 'Salvar Produto'}
                   </Button>
                 </form>
               </CardContent>
@@ -314,13 +407,12 @@ const AdminPanel = () => {
                       <form onSubmit={handleUpdateProduct} className="space-y-4">
                         <div className="grid md:grid-cols-2 gap-4">
                           <div className="space-y-2">
-                            <Label htmlFor="edit-foto">Foto do Produto (URL)</Label>
+                            <Label htmlFor="edit-foto">Foto do Produto</Label>
                             <Input
                               id="edit-foto"
-                              type="url"
-                              value={editProduct.foto}
-                              onChange={(e) => setEditProduct({...editProduct, foto: e.target.value})}
-                              placeholder="https://exemplo.com/foto.jpg"
+                              type="file"
+                              accept="image/*"
+                              onChange={(e) => setEditProductFile(e.target.files?.[0] || null)}
                             />
                           </div>
 
@@ -382,8 +474,8 @@ const AdminPanel = () => {
                         </div>
 
                         <div className="flex gap-2">
-                          <Button type="submit" className="bg-gradient-primary hover:opacity-90">
-                            Salvar Alterações
+                          <Button type="submit" disabled={uploadingEdit} className="bg-gradient-primary hover:opacity-90">
+                            {uploadingEdit ? 'Salvando...' : 'Salvar Alterações'}
                           </Button>
                           <Button type="button" variant="outline" onClick={handleCancelEdit}>
                             Cancelar
