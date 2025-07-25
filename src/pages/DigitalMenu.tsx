@@ -92,11 +92,24 @@ const DigitalMenu = () => {
     });
 
     // Enviar mensagem pelo WhatsApp
-    const message = `🧁 *NOVO PEDIDO - Liz Verdan Confeitaria*
+    let message = `🧁 *NOVO PEDIDO - Liz Verdan Confeitaria*
 
 👤 *Cliente:* ${orderData.nome_cliente}
-📱 *WhatsApp:* ${orderData.whatsapp}
-🏠 *Endereço:* ${orderData.endereco}
+📱 *WhatsApp:* ${orderData.whatsapp}`;
+
+    if (orderData.modo_entrega === 'Entrega') {
+      message += `
+🏠 *Endereço:* ${orderData.endereco}`;
+    } else if (orderData.modo_entrega === 'Retirada') {
+      message += `
+
+📍 *LOCAL PARA RETIRADA:*
+• Instagram: @lizverdanconfeitaria
+• WhatsApp: 22 99860-2746
+• Endereço: Estr. dos Passageiros, 2915 - São João, São Pedro da Aldeia - RJ, 28942-444, Brasil`;
+    }
+
+    message += `
 🚚 *Entrega:* ${orderData.modo_entrega}
 💳 *Pagamento:* ${orderData.forma_pagamento}
 
