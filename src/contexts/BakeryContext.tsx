@@ -49,6 +49,7 @@ interface BakeryContextType {
   carrinho: CartItem[];
   setCarrinho: (cart: CartItem[]) => void;
   addToCart: (item: CartItem) => void;
+  removeFromCart: (itemName: string) => void;
   clearCart: () => void;
   cartTotal: number;
   
@@ -236,6 +237,10 @@ export const BakeryProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     });
   };
 
+  const removeFromCart = (itemName: string) => {
+    setCarrinho(prev => prev.filter(item => item.nome !== itemName));
+  };
+
   const clearCart = () => {
     setCarrinho([]);
   };
@@ -328,6 +333,7 @@ export const BakeryProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       carrinho,
       setCarrinho,
       addToCart,
+      removeFromCart,
       clearCart,
       cartTotal,
       pedidos,

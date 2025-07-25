@@ -11,7 +11,7 @@ import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { useBakery } from '@/contexts/BakeryContext';
 import { useToast } from '@/hooks/use-toast';
-import { Trash2, Edit, LogOut } from 'lucide-react';
+import { Trash2, Edit, LogOut, Check, X } from 'lucide-react';
 
 const AdminPanel = () => {
   const navigate = useNavigate();
@@ -273,6 +273,45 @@ const AdminPanel = () => {
       toast({
         title: "Status atualizado!",
         description: `Pedido de ${order.nome_cliente} agora está: ${newStatus}`,
+      });
+    }
+  };
+
+  const handleAcceptOrder = (orderId: string) => {
+    updateOrderStatus(orderId, "Aceito");
+    const order = pedidos.find(p => p.id === orderId);
+    
+    if (order) {
+      const total = order.itens.reduce((sum, item) => sum + item.subtotal, 0);
+      const message = `Olá ${order.nome_cliente}! ✅\n\nSeu pedido foi ACEITO e já está sendo preparado!\n\nItens do pedido:\n${order.itens.map(item => `• ${item.quantidade}x ${item.nome}`).join('\n')}\n\nTotal: R$ ${total.toFixed(2)}\n\nObrigado pela preferência! 😊`;
+      
+      const whatsappNumber = order.whatsapp.replace(/\D/g, '');
+      const whatsappUrl = `https://wa.me/55${whatsappNumber}?text=${encodeURIComponent(message)}`;
+      
+      window.open(whatsappUrl, '_blank');
+      
+      toast({
+        title: "Pedido aceito!",
+        description: `Pedido de ${order.nome_cliente} foi aceito e cliente notificado.`,
+      });
+    }
+  };
+
+  const handleRejectOrder = (orderId: string) => {
+    updateOrderStatus(orderId, "Recusado");
+    const order = pedidos.find(p => p.id === orderId);
+    
+    if (order) {
+      const message = `Olá ${order.nome_cliente}! ❌\n\nInfelizmente não conseguimos aceitar seu pedido no momento.\n\nPor favor, entre em contato conosco para mais informações.\n\nObrigado pela compreensão! 😊`;
+      
+      const whatsappNumber = order.whatsapp.replace(/\D/g, '');
+      const whatsappUrl = `https://wa.me/55${whatsappNumber}?text=${encodeURIComponent(message)}`;
+      
+      window.open(whatsappUrl, '_blank');
+      
+      toast({
+        title: "Pedido recusado!",
+        description: `Pedido de ${order.nome_cliente} foi recusado e cliente notificado.`,
       });
     }
   };
@@ -571,6 +610,28 @@ const AdminPanel = () => {
                         </div>
                       ))}
                     </div>
+
+                    {pedido.status === "Em preparo" && (
+                      <div className="flex gap-2 mt-4 mb-2">
+                        <Button
+                          size="sm"
+                          variant="default"
+                          className="bg-green-600 hover:bg-green-700 text-white"
+                          onClick={() => handleAcceptOrder(pedido.id)}
+                        >
+                          <Check className="w-4 h-4 mr-1" />
+                          Aceitar Pedido
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          onClick={() => handleRejectOrder(pedido.id)}
+                        >
+                          <X className="w-4 h-4 mr-1" />
+                          Recusar Pedido
+                        </Button>
+                      </div>
+                    )}
 
                     <div className="flex gap-2 mt-4">
                       <Button

@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useBakery } from '@/contexts/BakeryContext';
 import { useToast } from '@/hooks/use-toast';
-import { ShoppingCart, Minus, Plus, Eye } from 'lucide-react';
+import { ShoppingCart, Minus, Plus, Eye, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 const DigitalMenu = () => {
@@ -18,6 +18,7 @@ const DigitalMenu = () => {
     produtos,
     carrinho,
     addToCart,
+    removeFromCart,
     clearCart,
     cartTotal,
     addOrder,
@@ -243,13 +244,23 @@ ${carrinho.map(item => `• ${item.quantidade}x ${item.nome} - R$ ${item.subtota
                   <div className="space-y-3">
                     {carrinho.map((item, index) => (
                       <div key={index} className="flex justify-between items-center p-3 bg-secondary rounded-lg">
-                        <div>
+                        <div className="flex-1">
                           <span className="font-medium">{item.quantidade}x {item.nome}</span>
                           <div className="text-sm text-muted-foreground">
                             R$ {item.valor.toFixed(2)} cada
                           </div>
                         </div>
-                        <span className="font-semibold">R$ {item.subtotal.toFixed(2)}</span>
+                        <div className="flex items-center gap-2">
+                          <span className="font-semibold">R$ {item.subtotal.toFixed(2)}</span>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => removeFromCart(item.nome)}
+                            className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                          >
+                            <X className="w-4 h-4" />
+                          </Button>
+                        </div>
                       </div>
                     ))}
                   </div>
