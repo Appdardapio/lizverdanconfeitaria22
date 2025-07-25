@@ -182,9 +182,6 @@ ${carrinho.map(item => `• ${item.quantidade}x ${item.nome} - R$ ${item.subtota
                           <span className="text-xl font-bold text-primary">
                             R$ {produto.valor.toFixed(2)}
                           </span>
-                          <Badge variant="secondary">
-                            Estoque: {produto.estoque}
-                          </Badge>
                         </div>
 
                         <div className="flex items-center justify-between mb-4">
