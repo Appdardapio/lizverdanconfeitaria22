@@ -58,8 +58,8 @@ const DigitalMenu = () => {
     });
 
     toast({
-      title: "Adicionado ao carrinho!",
-      description: `${quantity}x ${product.nome}`,
+      title: "✅ Adicionado ao carrinho!",
+      description: `${quantity}x ${product.nome} - Veja seu carrinho abaixo para finalizar`,
     });
 
     // Reset quantity
@@ -417,6 +417,33 @@ ${carrinho.map(item => `• ${item.quantidade}x ${item.nome} - R$ ${item.subtota
             </div>
           </DialogContent>
         </Dialog>
+
+        {/* Footer com informações de contato */}
+        <div className="bg-gradient-primary text-primary-foreground py-8 px-6 rounded-lg shadow-soft mt-12">
+          <div className="text-center space-y-4">
+            <div className="text-2xl mb-4">🧁</div>
+            <h3 className="text-xl font-bold mb-4">Liz Verdan Confeitaria</h3>
+            
+            <div className="space-y-2 text-sm opacity-90">
+              <div className="flex items-center justify-center gap-2">
+                <span className="font-medium">📷 Instagram:</span>
+                <span>@lizverdanconfeitaria</span>
+              </div>
+              <div className="flex items-center justify-center gap-2">
+                <span className="font-medium">📱 WhatsApp:</span>
+                <span>22 99860-2746</span>
+              </div>
+              <div className="flex items-center justify-center gap-2 text-center">
+                <span className="font-medium">📍 Endereço:</span>
+                <span>Estr. dos Passageiros, 2915 - São João, São Pedro da Aldeia - RJ, 28942-444, Brasil</span>
+              </div>
+            </div>
+            
+            <div className="border-t border-white/20 pt-4 mt-6">
+              <p className="text-xs opacity-70">Desenvolvido por: Dsm Consultoria</p>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Fixed Admin Button */}
