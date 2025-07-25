@@ -68,7 +68,10 @@ const DigitalMenu = () => {
   const handleFinalizarPedido = (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!orderData.nome_cliente || !orderData.whatsapp || !orderData.modo_entrega || !orderData.forma_pagamento || !orderData.endereco) {
+    // Para retirada, endereço não é obrigatório
+    const isEnderecoRequired = orderData.modo_entrega === 'Entrega';
+    
+    if (!orderData.nome_cliente || !orderData.whatsapp || !orderData.modo_entrega || !orderData.forma_pagamento || (isEnderecoRequired && !orderData.endereco)) {
       toast({
         variant: "destructive",
         title: "Erro",
@@ -317,20 +320,42 @@ ${carrinho.map(item => `• ${item.quantidade}x ${item.nome} - R$ ${item.subtota
                   </div>
                 </div>
 
-                <div className="space-y-2 md:col-span-2">
-                  <Label htmlFor="endereco">Endereço completo *</Label>
-                  <Textarea
-                    id="endereco"
-                    value={orderData.endereco}
-                    onChange={(e) => setOrderData({...orderData, endereco: e.target.value})}
-                    placeholder="Rua, número, bairro, cidade, CEP, ponto de referência..."
-                    className="min-h-[100px]"
-                    required
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Inclua todas as informações necessárias para a entrega
-                  </p>
-                </div>
+                {orderData.modo_entrega === 'Entrega' ? (
+                  <div className="space-y-2 md:col-span-2">
+                    <Label htmlFor="endereco">Endereço completo *</Label>
+                    <Textarea
+                      id="endereco"
+                      value={orderData.endereco}
+                      onChange={(e) => setOrderData({...orderData, endereco: e.target.value})}
+                      placeholder="Rua, número, bairro, cidade, CEP, ponto de referência..."
+                      className="min-h-[100px]"
+                      required
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Inclua todas as informações necessárias para a entrega
+                    </p>
+                  </div>
+                ) : orderData.modo_entrega === 'Retirada' ? (
+                  <div className="space-y-4 md:col-span-2">
+                    <div className="bg-secondary p-4 rounded-lg">
+                      <h3 className="font-semibold text-lg mb-3 text-primary">📍 Informações para Retirada</h3>
+                      <div className="space-y-2 text-sm">
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium">Instagram:</span>
+                          <span>@lizverdanconfeitaria</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium">WhatsApp:</span>
+                          <span>22 99860-2746</span>
+                        </div>
+                        <div className="flex items-start gap-2">
+                          <span className="font-medium">Endereço:</span>
+                          <span>Estr. dos Passageiros, 2915 - São João, São Pedro da Aldeia - RJ, 28942-444, Brasil</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ) : null}
 
                 <div className="flex gap-4">
                   <Button 
@@ -373,7 +398,7 @@ ${carrinho.map(item => `• ${item.quantidade}x ${item.nome} - R$ ${item.subtota
       {/* Fixed Admin Button */}
       <Button
         onClick={() => navigate('/admin')}
-        className="fixed bottom-6 right-6 w-12 h-12 rounded-full bg-transparent border-none text-2xl hover:bg-primary/10 transition-colors"
+        className="fixed bottom-6 right-6 w-12 h-12 rounded-full bg-transparent border-none text-transparent hover:text-transparent opacity-5 hover:opacity-10 transition-all"
         variant="ghost"
       >
         ⚙️
