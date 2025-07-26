@@ -14,6 +14,36 @@ export type Database = {
   }
   public: {
     Tables: {
+      categorias: {
+        Row: {
+          ativa: boolean
+          created_at: string
+          descricao: string | null
+          id: string
+          nome: string
+          ordem: number | null
+          updated_at: string
+        }
+        Insert: {
+          ativa?: boolean
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          nome: string
+          ordem?: number | null
+          updated_at?: string
+        }
+        Update: {
+          ativa?: boolean
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          nome?: string
+          ordem?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       itens_pedido: {
         Row: {
           created_at: string
@@ -96,6 +126,7 @@ export type Database = {
       }
       produtos: {
         Row: {
+          categoria_id: string | null
           created_at: string
           descricao: string | null
           disponibilidade: boolean
@@ -107,6 +138,7 @@ export type Database = {
           valor: number
         }
         Insert: {
+          categoria_id?: string | null
           created_at?: string
           descricao?: string | null
           disponibilidade?: boolean
@@ -118,6 +150,7 @@ export type Database = {
           valor: number
         }
         Update: {
+          categoria_id?: string | null
           created_at?: string
           descricao?: string | null
           disponibilidade?: boolean
@@ -128,7 +161,15 @@ export type Database = {
           updated_at?: string
           valor?: number
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "produtos_categoria_id_fkey"
+            columns: ["categoria_id"]
+            isOneToOne: false
+            referencedRelation: "categorias"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {

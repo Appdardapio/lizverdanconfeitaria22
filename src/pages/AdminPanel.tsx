@@ -11,7 +11,8 @@ import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { useBakery } from '@/contexts/BakeryContext';
 import { useToast } from '@/hooks/use-toast';
-import { Trash2, Edit, LogOut, Check, X } from 'lucide-react';
+import { Trash2, Edit, LogOut, Check, X, Plus } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 const AdminPanel = () => {
   const navigate = useNavigate();
@@ -20,11 +21,16 @@ const AdminPanel = () => {
     logado,
     setLogado,
     produtos,
+    categorias,
     addProduct,
     updateProduct,
     deleteProduct,
+    addCategory,
+    updateCategory,
+    deleteCategory,
     pedidos,
-    updateOrderStatus
+    updateOrderStatus,
+    deleteOrder
   } = useBakery();
 
   // Redirect if not logged in
@@ -34,6 +40,13 @@ const AdminPanel = () => {
     }
   }, [logado, navigate]);
 
+  // Category form state
+  const [newCategory, setNewCategory] = useState({
+    nome: '',
+    descricao: '',
+    ordem: '1'
+  });
+
   // Product form state
   const [newProduct, setNewProduct] = useState({
     foto: '',
@@ -41,7 +54,8 @@ const AdminPanel = () => {
     descricao: '',
     valor: '',
     estoque: '',
-    disponibilidade: true
+    disponibilidade: true,
+    categoria_id: ''
   });
   
   const [newProductFile, setNewProductFile] = useState<File | null>(null);
@@ -55,7 +69,8 @@ const AdminPanel = () => {
     descricao: '',
     valor: '',
     estoque: '',
-    disponibilidade: true
+    disponibilidade: true,
+    categoria_id: ''
   });
   
   const [editProductFile, setEditProductFile] = useState<File | null>(null);
@@ -89,6 +104,46 @@ const AdminPanel = () => {
       .getPublicUrl(fileName);
     
     return publicUrl;
+  };
+
+  const handleAddCategory = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!newCategory.nome) {
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: "Nome da categoria é obrigatório!",
+      });
+      return;
+    }
+
+    try {
+      addCategory({
+        nome: newCategory.nome,
+        descricao: newCategory.descricao,
+        ordem: parseInt(newCategory.ordem),
+        ativa: true
+      });
+
+      setNewCategory({
+        nome: '',
+        descricao: '',
+        ordem: '1'
+      });
+
+      toast({
+        title: "Categoria adicionada!",
+        description: `${newCategory.nome} foi cadastrada com sucesso.`,
+      });
+    } catch (error) {
+      console.error('Erro ao adicionar categoria:', error);
+      toast({
+        title: "Erro",
+        description: "Falha ao adicionar categoria",
+        variant: "destructive"
+      });
+    }
   };
 
   const handleAddProduct = async (e: React.FormEvent) => {
@@ -129,7 +184,8 @@ const AdminPanel = () => {
         descricao: newProduct.descricao,
         valor: parseFloat(newProduct.valor),
         estoque: parseInt(newProduct.estoque),
-        disponibilidade: newProduct.disponibilidade
+        disponibilidade: newProduct.disponibilidade,
+        categoria_id: newProduct.categoria_id || undefined
       });
 
       setNewProduct({
@@ -138,7 +194,8 @@ const AdminPanel = () => {
         descricao: '',
         valor: '',
         estoque: '',
-        disponibilidade: true
+        disponibilidade: true,
+        categoria_id: ''
       });
       setNewProductFile(null);
 
@@ -166,7 +223,8 @@ const AdminPanel = () => {
       descricao: product.descricao,
       valor: product.valor.toString(),
       estoque: product.estoque.toString(),
-      disponibilidade: product.disponibilidade
+      disponibilidade: product.disponibilidade,
+      categoria_id: product.categoria_id || ''
     });
     setEditProductFile(null);
   };
@@ -211,7 +269,8 @@ const AdminPanel = () => {
         descricao: editProduct.descricao,
         valor: parseFloat(editProduct.valor),
         estoque: parseInt(editProduct.estoque),
-        disponibilidade: editProduct.disponibilidade
+        disponibilidade: editProduct.disponibilidade,
+        categoria_id: editProduct.categoria_id || undefined
       });
 
       setEditingProduct(null);
@@ -221,7 +280,8 @@ const AdminPanel = () => {
         descricao: '',
         valor: '',
         estoque: '',
-        disponibilidade: true
+        disponibilidade: true,
+        categoria_id: ''
       });
       setEditProductFile(null);
 
@@ -249,7 +309,8 @@ const AdminPanel = () => {
       descricao: '',
       valor: '',
       estoque: '',
-      disponibilidade: true
+      disponibilidade: true,
+      categoria_id: ''
     });
     setEditProductFile(null);
   };
@@ -346,12 +407,99 @@ const AdminPanel = () => {
           </Button>
         </div>
 
-        <Tabs defaultValue="cadastrar" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3">
+        <Tabs defaultValue="categorias" className="space-y-6">
+          <TabsList className="grid w-full grid-cols-4">
+            <TabsTrigger value="categorias">Categorias</TabsTrigger>
             <TabsTrigger value="cadastrar">Cadastrar Produto</TabsTrigger>
             <TabsTrigger value="produtos">Produtos Cadastrados</TabsTrigger>
             <TabsTrigger value="pedidos">Pedidos</TabsTrigger>
           </TabsList>
+
+          <TabsContent value="categorias">
+            <Card className="shadow-card">
+              <CardHeader>
+                <CardTitle>Gerenciar Categorias</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <form onSubmit={handleAddCategory} className="space-y-4 mb-6">
+                  <div className="grid md:grid-cols-3 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="cat-nome">Nome da Categoria *</Label>
+                      <Input
+                        id="cat-nome"
+                        type="text"
+                        value={newCategory.nome}
+                        onChange={(e) => setNewCategory({...newCategory, nome: e.target.value})}
+                        placeholder="Ex: Bolos, Doces, Salgados"
+                        required
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="cat-descricao">Descrição</Label>
+                      <Input
+                        id="cat-descricao"
+                        type="text"
+                        value={newCategory.descricao}
+                        onChange={(e) => setNewCategory({...newCategory, descricao: e.target.value})}
+                        placeholder="Descrição da categoria"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="cat-ordem">Ordem de Exibição</Label>
+                      <Input
+                        id="cat-ordem"
+                        type="number"
+                        value={newCategory.ordem}
+                        onChange={(e) => setNewCategory({...newCategory, ordem: e.target.value})}
+                        placeholder="1"
+                      />
+                    </div>
+                  </div>
+
+                  <Button type="submit" className="w-full bg-gradient-primary hover:opacity-90">
+                    <Plus className="w-4 h-4 mr-2" />
+                    Adicionar Categoria
+                  </Button>
+                </form>
+
+                <div className="space-y-3">
+                  <h3 className="font-semibold">Categorias Cadastradas:</h3>
+                  {categorias.map((categoria) => (
+                    <div key={categoria.id} className="flex items-center justify-between p-3 border rounded-lg">
+                      <div>
+                        <span className="font-medium">{categoria.nome}</span>
+                        {categoria.descricao && (
+                          <span className="text-muted-foreground text-sm ml-2">- {categoria.descricao}</span>
+                        )}
+                        <span className="text-xs text-muted-foreground ml-2">(Ordem: {categoria.ordem})</span>
+                      </div>
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        onClick={() => {
+                          deleteCategory(categoria.id);
+                          toast({
+                            title: "Categoria excluída!",
+                            description: `${categoria.nome} foi removida com sucesso.`,
+                          });
+                        }}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  ))}
+                  
+                  {categorias.length === 0 && (
+                    <p className="text-muted-foreground text-center py-4">
+                      Nenhuma categoria cadastrada
+                    </p>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
 
           <TabsContent value="cadastrar">
             <Card className="shadow-card">
@@ -416,6 +564,22 @@ const AdminPanel = () => {
                         placeholder="0"
                         required
                       />
+                    </div>
+
+                    <div className="space-y-2 md:col-span-2">
+                      <Label htmlFor="categoria">Categoria</Label>
+                      <Select value={newProduct.categoria_id} onValueChange={(value) => setNewProduct({...newProduct, categoria_id: value})}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione uma categoria" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {categorias.map((categoria) => (
+                            <SelectItem key={categoria.id} value={categoria.id}>
+                              {categoria.nome}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
 
                     <div className="flex items-center space-x-2 md:col-span-2">
@@ -500,6 +664,22 @@ const AdminPanel = () => {
                               placeholder="0"
                               required
                             />
+                          </div>
+
+                          <div className="space-y-2 md:col-span-2">
+                            <Label htmlFor="edit-categoria">Categoria</Label>
+                            <Select value={editProduct.categoria_id} onValueChange={(value) => setEditProduct({...editProduct, categoria_id: value})}>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Selecione uma categoria" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {categorias.map((categoria) => (
+                                  <SelectItem key={categoria.id} value={categoria.id}>
+                                    {categoria.nome}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
                           </div>
 
                           <div className="flex items-center space-x-2 md:col-span-2">
@@ -657,8 +837,22 @@ const AdminPanel = () => {
                       </Button>
                     </div>
                     
-                    <div className="mt-2">
+                    <div className="flex justify-between items-center mt-2">
                       <Badge variant="outline">Status atual: {pedido.status}</Badge>
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        onClick={() => {
+                          deleteOrder(pedido.id);
+                          toast({
+                            title: "Pedido excluído!",
+                            description: `Pedido de ${pedido.nome_cliente} foi removido com sucesso.`,
+                          });
+                        }}
+                      >
+                        <Trash2 className="w-4 h-4 mr-1" />
+                        Excluir Pedido
+                      </Button>
                     </div>
                   </CardContent>
                 </Card>

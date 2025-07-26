@@ -16,6 +16,7 @@ const DigitalMenu = () => {
   const navigate = useNavigate();
   const {
     produtos,
+    categorias,
     carrinho,
     addToCart,
     removeFromCart,
@@ -50,20 +51,28 @@ const DigitalMenu = () => {
   const handleAddToCart = (product: typeof produtos[0]) => {
     const quantity = quantities[product.nome] || 1;
     
-    addToCart({
+    const success = addToCart({
       nome: product.nome,
       valor: product.valor,
       quantidade: quantity,
       subtotal: quantity * product.valor
-    });
+    }, product.estoque);
 
-    toast({
-      title: "✅ Adicionado ao carrinho!",
-      description: `${quantity}x ${product.nome} - Veja seu carrinho abaixo para finalizar`,
-    });
+    if (success) {
+      toast({
+        title: "✅ Adicionado ao carrinho!",
+        description: `${quantity}x ${product.nome} - Veja seu carrinho abaixo para finalizar`,
+      });
 
-    // Reset quantity
-    setQuantities({...quantities, [product.nome]: 1});
+      // Reset quantity
+      setQuantities({...quantities, [product.nome]: 1});
+    } else {
+      toast({
+        variant: "destructive",
+        title: "❌ Erro ao adicionar",
+        description: `Não há quantidade suficiente em estoque. Disponível: ${product.estoque} unidades`,
+      });
+    }
   };
 
   const handleFinalizarPedido = (e: React.FormEvent) => {
@@ -100,9 +109,11 @@ const DigitalMenu = () => {
 
     if (orderData.modo_entrega === 'Entrega') {
       message += `
-🏠 *Endereço:* ${orderData.endereco}`;
+🏠 *Endereço:* ${orderData.endereco}
+🚚 *Entrega:* ${orderData.modo_entrega} (Valor de entrega: A combinar no WhatsApp)`;
     } else if (orderData.modo_entrega === 'Retirada') {
       message += `
+🚚 *Entrega:* ${orderData.modo_entrega}
 
 📍 *LOCAL PARA RETIRADA:*
 • Instagram: @lizverdanconfeitaria
@@ -111,13 +122,15 @@ const DigitalMenu = () => {
     }
 
     message += `
-🚚 *Entrega:* ${orderData.modo_entrega}
 💳 *Pagamento:* ${orderData.forma_pagamento}
 
 📦 *Itens do pedido:*
 ${carrinho.map(item => `• ${item.quantidade}x ${item.nome} - R$ ${item.subtotal.toFixed(2)}`).join('\n')}
 
 💰 *Total: R$ ${cartTotal.toFixed(2)}*
+
+⏰ *Tempo médio de preparo:* 
+${orderData.modo_entrega === 'Retirada' ? '20 à 40 minutos' : '20 à 40 minutos + tempo de entrega'}
 
 ⏰ *Pedido feito em:* ${new Date().toLocaleString('pt-BR')}`;
 
@@ -160,8 +173,26 @@ ${carrinho.map(item => `• ${item.quantidade}x ${item.nome} - R$ ${item.subtota
             <div className="mb-8">
               <h2 className="text-2xl font-bold text-primary mb-6">Nossos Produtos</h2>
               
-              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {availableProducts.map((produto) => (
+              {categorias.length > 0 ? (
+                categorias.map((categoria) => {
+                  const produtosCategoria = availableProducts.filter(p => p.categoria_id === categoria.id);
+                  const produtosSemCategoria = availableProducts.filter(p => !p.categoria_id);
+                  
+                  if (produtosCategoria.length === 0 && categoria.nome !== 'Geral') return null;
+                  
+                  const produtosParaExibir = categoria.nome === 'Geral' 
+                    ? [...produtosCategoria, ...produtosSemCategoria]
+                    : produtosCategoria;
+                    
+                  if (produtosParaExibir.length === 0) return null;
+                  
+                  return (
+                    <div key={categoria.id} className="mb-8">
+                      <h3 className="text-xl font-semibold text-primary mb-4 border-b border-primary/20 pb-2">
+                        {categoria.nome}
+                      </h3>
+                      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {produtosParaExibir.map((produto) => (
                   <Card key={produto.id} className="shadow-card hover:shadow-soft transition-shadow">
                     <CardContent className="p-0">
                       <div className="relative group cursor-pointer" onClick={() => setSelectedImage({url: produto.foto, name: produto.nome})}>
@@ -216,8 +247,71 @@ ${carrinho.map(item => `• ${item.quantidade}x ${item.nome} - R$ ${item.subtota
                       </div>
                     </CardContent>
                   </Card>
-                ))}
-              </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })
+              ) : (
+                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {availableProducts.map((produto) => (
+                    <Card key={produto.id} className="shadow-card hover:shadow-soft transition-shadow">
+                      <CardContent className="p-0">
+                        <div className="relative group cursor-pointer" onClick={() => setSelectedImage({url: produto.foto, name: produto.nome})}>
+                          <img 
+                            src={produto.foto} 
+                            alt={produto.nome}
+                            className="w-full h-48 object-cover rounded-t-lg group-hover:opacity-80 transition-opacity"
+                          />
+                          <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all duration-200 rounded-t-lg flex items-center justify-center">
+                            <Eye className="w-6 h-6 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                          </div>
+                        </div>
+                        <div className="p-4">
+                          <h3 className="font-semibold text-lg mb-2">{produto.nome}</h3>
+                          <p className="text-muted-foreground text-sm mb-3">{produto.descricao}</p>
+                          
+                          <div className="flex justify-between items-center mb-4">
+                            <span className="text-xl font-bold text-primary">
+                              R$ {produto.valor.toFixed(2)}
+                            </span>
+                          </div>
+
+                          <div className="flex items-center justify-between mb-4">
+                            <Label>Quantidade:</Label>
+                            <div className="flex items-center gap-2">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleQuantityChange(produto.nome, -1)}
+                              >
+                                <Minus className="w-3 h-3" />
+                              </Button>
+                              <span className="w-8 text-center">
+                                {quantities[produto.nome] || 1}
+                              </span>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleQuantityChange(produto.nome, 1)}
+                              >
+                                <Plus className="w-3 h-3" />
+                              </Button>
+                            </div>
+                          </div>
+
+                          <Button 
+                            className="w-full bg-gradient-primary hover:opacity-90"
+                            onClick={() => handleAddToCart(produto)}
+                          >
+                            Adicionar ao Carrinho
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
 
               {availableProducts.length === 0 && (
                 <Card className="shadow-card">

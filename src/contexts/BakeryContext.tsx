@@ -4,6 +4,14 @@ import brigadeiroImg from '@/assets/brigadeiro.jpg';
 import beijinhoImg from '@/assets/beijinho.jpg';
 import tortaMorangoImg from '@/assets/torta-morango.jpg';
 
+interface Category {
+  id: string;
+  nome: string;
+  descricao: string;
+  ordem: number;
+  ativa: boolean;
+}
+
 interface Product {
   id: string;
   foto: string;
@@ -12,6 +20,8 @@ interface Product {
   valor: number;
   estoque: number;
   disponibilidade: boolean;
+  categoria_id?: string;
+  categoria?: Category;
 }
 
 interface CartItem {
@@ -38,6 +48,13 @@ interface BakeryContextType {
   logado: boolean;
   setLogado: (value: boolean) => void;
   
+  // Categories
+  categorias: Category[];
+  setCategorias: (categories: Category[]) => void;
+  addCategory: (category: Omit<Category, 'id'>) => void;
+  updateCategory: (id: string, updates: Partial<Category>) => void;
+  deleteCategory: (id: string) => void;
+  
   // Products
   produtos: Product[];
   setProdutos: (products: Product[]) => void;
@@ -48,7 +65,7 @@ interface BakeryContextType {
   // Cart
   carrinho: CartItem[];
   setCarrinho: (cart: CartItem[]) => void;
-  addToCart: (item: CartItem) => void;
+  addToCart: (item: CartItem, maxQuantity: number) => boolean;
   removeFromCart: (itemName: string) => void;
   clearCart: () => void;
   cartTotal: number;
@@ -58,27 +75,49 @@ interface BakeryContextType {
   setPedidos: (orders: Order[]) => void;
   addOrder: (order: Omit<Order, 'id'>) => void;
   updateOrderStatus: (id: string, status: string) => void;
+  deleteOrder: (id: string) => void;
 }
 
 const BakeryContext = createContext<BakeryContextType | undefined>(undefined);
 
 export const BakeryProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [logado, setLogado] = useState(false);
+  const [categorias, setCategorias] = useState<Category[]>([]);
   const [produtos, setProdutos] = useState<Product[]>([]);
   const [carrinho, setCarrinho] = useState<CartItem[]>([]);
   const [pedidos, setPedidos] = useState<Order[]>([]);
 
-  // Load products from database
+  // Load data from database
   useEffect(() => {
+    loadCategories();
     loadProducts();
     loadOrders();
   }, []);
+
+  const loadCategories = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('categorias')
+        .select('*')
+        .eq('ativa', true)
+        .order('ordem', { ascending: true });
+      
+      if (error) throw error;
+      setCategorias(data || []);
+    } catch (error) {
+      console.error('Erro ao carregar categorias:', error);
+      setCategorias([]);
+    }
+  };
 
   const loadProducts = async () => {
     try {
       const { data, error } = await supabase
         .from('produtos')
-        .select('*')
+        .select(`
+          *,
+          categoria:categorias(*)
+        `)
         .order('created_at', { ascending: false });
       
       if (error) throw error;
@@ -172,6 +211,51 @@ export const BakeryProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     }
   };
 
+  const addCategory = async (category: Omit<Category, 'id'>) => {
+    try {
+      const { data, error } = await supabase
+        .from('categorias')
+        .insert([category])
+        .select()
+        .single();
+      
+      if (error) throw error;
+      if (data) setCategorias(prev => [...prev, data]);
+    } catch (error) {
+      console.error('Erro ao adicionar categoria:', error);
+    }
+  };
+
+  const updateCategory = async (id: string, updates: Partial<Category>) => {
+    try {
+      const { data, error } = await supabase
+        .from('categorias')
+        .update(updates)
+        .eq('id', id)
+        .select()
+        .single();
+      
+      if (error) throw error;
+      if (data) setCategorias(prev => prev.map(c => c.id === id ? data : c));
+    } catch (error) {
+      console.error('Erro ao atualizar categoria:', error);
+    }
+  };
+
+  const deleteCategory = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('categorias')
+        .delete()
+        .eq('id', id);
+      
+      if (error) throw error;
+      setCategorias(prev => prev.filter(c => c.id !== id));
+    } catch (error) {
+      console.error('Erro ao excluir categoria:', error);
+    }
+  };
+
   const addProduct = async (product: Omit<Product, 'id'>) => {
     try {
       const { data, error } = await supabase
@@ -182,7 +266,8 @@ export const BakeryProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           descricao: product.descricao,
           valor: product.valor,
           estoque: product.estoque,
-          disponibilidade: product.disponibilidade
+          disponibilidade: product.disponibilidade,
+          categoria_id: product.categoria_id
         }])
         .select()
         .single();
@@ -224,7 +309,14 @@ export const BakeryProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     }
   };
 
-  const addToCart = (item: CartItem) => {
+  const addToCart = (item: CartItem, maxQuantity: number): boolean => {
+    const currentCartQuantity = carrinho.find(cartItem => cartItem.nome === item.nome)?.quantidade || 0;
+    const totalQuantity = currentCartQuantity + item.quantidade;
+    
+    if (totalQuantity > maxQuantity) {
+      return false; // Não pode adicionar, excede o estoque
+    }
+    
     setCarrinho(prev => {
       const existingIndex = prev.findIndex(cartItem => cartItem.nome === item.nome);
       if (existingIndex >= 0) {
@@ -235,6 +327,8 @@ export const BakeryProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       }
       return [...prev, item];
     });
+    
+    return true; // Adicionado com sucesso
   };
 
   const removeFromCart = (itemName: string) => {
@@ -321,10 +415,38 @@ export const BakeryProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     }
   };
 
+  const deleteOrder = async (id: string) => {
+    try {
+      // Primeiro deletar os itens do pedido
+      const { error: itensError } = await supabase
+        .from('itens_pedido')
+        .delete()
+        .eq('pedido_id', id);
+
+      if (itensError) throw itensError;
+
+      // Depois deletar o pedido
+      const { error } = await supabase
+        .from('pedidos')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+      setPedidos(prev => prev.filter(p => p.id !== id));
+    } catch (error) {
+      console.error('Erro ao deletar pedido:', error);
+    }
+  };
+
   return (
     <BakeryContext.Provider value={{
       logado,
       setLogado,
+      categorias,
+      setCategorias,
+      addCategory,
+      updateCategory,
+      deleteCategory,
       produtos,
       setProdutos,
       addProduct,
@@ -340,6 +462,7 @@ export const BakeryProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       setPedidos,
       addOrder,
       updateOrderStatus,
+      deleteOrder,
     }}>
       {children}
     </BakeryContext.Provider>
