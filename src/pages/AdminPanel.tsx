@@ -323,7 +323,7 @@ const AdminPanel = () => {
       // Se o status for "Saiu para entrega", enviar mensagem no WhatsApp para o cliente
       if (newStatus === "Saiu para entrega") {
         const total = order.itens.reduce((sum, item) => sum + item.subtotal, 0);
-        const message = `Olá ${order.nome_cliente}! 🚚\n\nSeu pedido saiu para entrega e já está a caminho!\n\nItens do pedido:\n${order.itens.map(item => `• ${item.quantidade}x ${item.nome}`).join('\n')}\n\nTotal: R$ ${total.toFixed(2)}\n\nObrigado pela preferência! 😊`;
+        const message = `Olá ${order.nome_cliente}! 🚚\n\nSeu pedido saiu para entrega e já está a caminho!\n\n📦 Itens do pedido:\n${order.itens.map(item => `• ${item.quantidade}x ${item.nome}`).join('\n')}\n\n💰 Total: R$ ${total.toFixed(2)}\n\n🔐 **Código de entrega chegará na sua caixa de mensagens**\n\nObrigado pela preferência! 😊`;
         
         const whatsappNumber = order.whatsapp.replace(/\D/g, '');
         const whatsappUrl = `https://wa.me/55${whatsappNumber}?text=${encodeURIComponent(message)}`;
