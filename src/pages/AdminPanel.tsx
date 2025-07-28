@@ -13,6 +13,7 @@ import { useBakery } from '@/contexts/BakeryContext';
 import { useToast } from '@/hooks/use-toast';
 import { Trash2, Edit, LogOut, Check, X, Plus } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import lizVerdanLogo from '@/assets/liz-verdan-logo.png';
 
 const AdminPanel = () => {
   const navigate = useNavigate();
@@ -395,11 +396,18 @@ const AdminPanel = () => {
     <div className="min-h-screen bg-gradient-soft p-4">
       <div className="container mx-auto max-w-6xl">
         <div className="flex justify-between items-center mb-6">
-          <div>
-            <h1 className="text-3xl font-bold text-primary mb-2">
-              Painel Administrativo
-            </h1>
-            <p className="text-muted-foreground">Liz Verdan Confeitaria</p>
+          <div className="flex items-center gap-4">
+            <img 
+              src={lizVerdanLogo} 
+              alt="Liz Verdan Confeitaria" 
+              className="w-24 h-auto"
+            />
+            <div>
+              <h1 className="text-3xl font-bold text-primary mb-2">
+                Painel Administrativo
+              </h1>
+              <p className="text-muted-foreground">Liz Verdan Confeitaria</p>
+            </div>
           </div>
           <Button variant="outline" onClick={handleLogout} className="gap-2">
             <LogOut className="w-4 h-4" />

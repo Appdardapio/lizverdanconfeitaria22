@@ -11,6 +11,7 @@ import { useBakery } from '@/contexts/BakeryContext';
 import { useToast } from '@/hooks/use-toast';
 import { ShoppingCart, Minus, Plus, Eye, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import lizVerdanLogo from '@/assets/liz-verdan-logo.png';
 
 const DigitalMenu = () => {
   const navigate = useNavigate();
@@ -159,8 +160,11 @@ ${orderData.modo_entrega === 'Retirada' ? '20 à 40 minutos' : '20 à 40 minutos
       <div className="bg-gradient-primary text-primary-foreground p-6">
         <div className="container mx-auto max-w-4xl">
           <div className="text-center">
-            <div className="text-4xl mb-2">🧁</div>
-            <h1 className="text-3xl font-bold mb-2">Liz Verdan Confeitaria</h1>
+            <img 
+              src={lizVerdanLogo} 
+              alt="Liz Verdan Confeitaria" 
+              className="w-48 h-auto mx-auto mb-4"
+            />
             <p className="opacity-90">Cardápio Digital</p>
           </div>
         </div>
