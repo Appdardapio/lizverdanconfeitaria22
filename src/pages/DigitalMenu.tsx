@@ -516,7 +516,11 @@ ${orderData.modo_entrega === 'Retirada' ? '20 à 40 minutos' : '20 à 40 minutos
         {/* Footer com informações de contato */}
         <div className="bg-gradient-primary text-primary-foreground py-8 px-6 rounded-lg shadow-soft mt-12">
           <div className="text-center space-y-4">
-            <div className="text-2xl mb-4">🧁</div>
+            <img 
+              src={lizVerdanLogo} 
+              alt="Liz Verdan Confeitaria" 
+              className="w-32 h-auto mx-auto mb-4"
+            />
             <h3 className="text-xl font-bold mb-4">Liz Verdan Confeitaria</h3>
             
             <div className="space-y-2 text-sm opacity-90">
